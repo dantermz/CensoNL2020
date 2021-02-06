@@ -17,11 +17,11 @@ unzip(zipfile = "censo20_NL.zip", exdir = getwd())
 d20 <-read.csv( paste("RESAGEBURB_19CSV20.csv", sep=""), encoding="UTF-8", na.strings="*", stringsAsFactors = FALSE) 
 #Cargar librerias
 library(tidyverse)
-
+#colnames(d20)[colnames(d20)== "NOM_MUN"]<-"Municipios"
 #(a) Filtra tu base de datos de tal forma que solamente despliegue los 
 #resultados de las manzanas, elimina los totales por AGEB, localidad, 
 #municipio y estado. Quédate solamente con las manzanas.
-library(dplyr)
+head(d20)
 
 d20mza <-select(d20,NOM_MUN,MZA: VPH_SINTIC)
 head(d20mza)
@@ -39,13 +39,16 @@ head(ZMM)
 #servicios de salud.
 ZMM1<-select(ZMM,NOM_MUN,MZA,POBTOT,GRAPROES,VIVPAR_HAB,VPH_INTER,PSINDER,PRO_OCUP_C)
 head(select(ZMM,NOM_MUN,MZA,POBTOT,GRAPROES,VIVPAR_HAB,VPH_INTER,PSINDER,PRO_OCUP_C))
-
+colnames(ZMM1)[colnames(ZMM1)== "NOM_MUN"]<-"Municipios"
 #(c) En la base de datos del inciso anterior, elimina las manzanas que contengan
 #valores nulos en alguna de las variables que seleccionaste.
 
 c<-na.omit(ZMM1)
-c$GRAPROES[c$GRAPROES %in% c("N/D")]<-0
-c$GRAPROES<-as.integer(c$GRAPROES)
+c[c == "N/D"]<-0
+###
+#c$GRAPROES[c$GRAPROES %in% c("N/D")]<-0
+c[c(4:8)]<-lapply(c[c(4:8)], as.integer)
+#c$GRAPROES<-as.integer(c$GRAPROES)
 anyNA(c)
 #(d) Con esta base de datos final, genera una tabla que despliegue el mínimo, 
 #máximo y promedio de grado promedio escolaridad por municipio a partir de las 
@@ -54,6 +57,9 @@ anyNA(c)
 #el código de R.
 
 c %>% 
-  group_by(NOM_MUN)%>%
+  group_by(Municipios )%>%
   summarise(manzanas=sum(MZA),Min_Escolaridad=min(GRAPROES),Maximo_Escolaridad=max(GRAPROES),
-            Prom_Escolaridad=mean(GRAPROES))
+            Prom_Escolaridad=mean(GRAPROES))%>%
+  arrange(desc(Maximo_Escolaridad))
+
+ccount()
