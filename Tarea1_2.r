@@ -37,8 +37,8 @@ head(ZMM)
 #escolaridad, población total, viviendas particulares habitadas, viviendas 
 #con internet, promedio de ocupantes por cuarto, población sin afiliación a
 #servicios de salud.
-ZMM1<-select(ZMM,NOM_MUN,MZA,POBTOT,GRAPROES,VIVPAR_HAB,VPH_INTER,PSINDER,PRO_OCUP_C)
-head(select(ZMM,NOM_MUN,MZA,POBTOT,GRAPROES,VIVPAR_HAB,VPH_INTER,PSINDER,PRO_OCUP_C))
+ZMM1<-select(ZMM,NOM_MUN,MZA,POBTOT,TOTHOG,GRAPROES,VIVPAR_HAB,VPH_INTER,PSINDER,PRO_OCUP_C)
+head(select(ZMM,NOM_MUN,MZA,POBTOT,TOTHOG,GRAPROES,VIVPAR_HAB,VPH_INTER,PSINDER,PRO_OCUP_C))
 colnames(ZMM1)[colnames(ZMM1)== "NOM_MUN"]<-"Municipios"
 #(c) En la base de datos del inciso anterior, elimina las manzanas que contengan
 #valores nulos en alguna de las variables que seleccionaste.
@@ -47,7 +47,7 @@ c<-na.omit(ZMM1)
 c[c == "N/D"]<-0
 ###
 #c$GRAPROES[c$GRAPROES %in% c("N/D")]<-0
-c[c(4:8)]<-lapply(c[c(4:8)], as.integer)
+c[c(4:9)]<-lapply(c[c(4:9)], as.integer)
 #c$GRAPROES<-as.integer(c$GRAPROES)
 anyNA(c)
 #(d) Con esta base de datos final, genera una tabla que despliegue el mínimo, 
@@ -57,9 +57,78 @@ anyNA(c)
 #el código de R.
 
 c %>% 
-  group_by(Municipios )%>%
-  summarise(manzanas=sum(MZA),Min_Escolaridad=min(GRAPROES),Maximo_Escolaridad=max(GRAPROES),
-            Prom_Escolaridad=mean(GRAPROES))%>%
-  arrange(desc(Maximo_Escolaridad))
+  group_by(Municipios)%>%
+  summarise(Num_Manz=sum(MZA),Min_Esc=min(GRAPROES),Max_Esc=max(GRAPROES),
+  Prom_Esc=mean(GRAPROES))%>%
+  arrange(desc(Max_Esc))
+ 
 
-ccount()
+#Regresión Lineal 
+#(a) Con la base de datos del ejercicio anterior, cálcula las siguientes dos 
+#nueva variables: 
+#a) promedio de viviendas particulares habitadas con internet.
+c %>% 
+  group_by(Municipios)%>%
+  summarise(Num_Manz=sum(MZA),Min_Esc=min(GRAPROES),Max_Esc=max(GRAPROES),
+            Prom_Esc=mean(GRAPROES),Prom_Viv_Int=mean(VPH_INTER))%>%
+            arrange(desc(Prom_Viv_Int))
+
+#b)porcentaje de la población sin afiliación a servicios de salud.
+c %>% 
+  group_by(Municipios)%>%
+  summarise(Num_Manz=sum(MZA),Min_Esc=min(GRAPROES),Max_Esc=max(GRAPROES),
+            Prom_Esc=mean(GRAPROES),Prom_Viv_Int=mean(VPH_INTER), Sin_Serv_Salud=mean(PSINDER))%>%
+  arrange(desc(Sin_Serv_Salud))
+
+#(b) Estima una regresión lineal de grado promedio de escolaridad por manzana 
+#sobre porcentaje de vivendas con internet. Presenta el resultado e interpreta 
+#el coeficiente.
+cor(c$VPH_INTER/100,c$GRAPROES)
+
+#(c) Dibuja un plot donde grafiques grado promedio de escolaridad contra 
+#porcentaje de viviendas, agregando al plot de puntos una línea en color 
+#rojo que represente tu línea de regresión. ¿Qué te dice esteplot?
+plot(c$VPH_INTER/100,c$GRAPROES)
+abline(lm(c$GRAPROES~c$VPH_INTER), col="red")
+ols1<- lm(c$GRAPROES~c$VPH_INTER, data=c)
+summary(ols1)
+
+#(d) Estima una regresión lineal de grado promedio de escolaridad por manzana 
+#sobre porcentaje de viviendas con internet, 
+cor(c$VPH_INTER/100,c$GRAPROES)
+
+#promedio de ocupantes por cuarto
+cor(c$PRO_OCUP_C,c$GRAPROES)
+plot(c$PRO_OCUP_C,c$GRAPROES)
+abline(lm(c$GRAPROES~c$PRO_OCUP_C), col="red")
+ols2<- lm(GRAPROES ~ PRO_OCUP_C, data=c)
+summary(ols2)
+
+#porcentaje de población sin afiliación servicios de salud.
+cor(c$PSINDER,c$GRAPROES)
+plot(c$PSINDER,c$GRAPROES)
+abline(lm(c$GRAPROES~c$PSINDER), col="red")
+ols3<- lm(GRAPROES ~ PSINDER, data=c)
+summary(ols3)
+
+
+#Presenta los resultados e interpreta. ¿Cómo cambiaron los estimadores respecto 
+#al ejercicio anterior? ¿Por qué?
+png("tarea2.png", width=480, height=480)
+
+par(mar = c(4,4,2,2), mfrow=c(2,2))
+
+plot(c$VPH_INTER/100,c$GRAPROES)
+abline(lm(c$GRAPROES~c$VPH_INTER), col="red")
+
+plot(c$PRO_OCUP_C,c$GRAPROES)
+abline(lm(c$GRAPROES~c$PRO_OCUP_C), col="red")
+
+plot(c$PSINDER,c$GRAPROES)
+abline(lm(c$GRAPROES~c$PSINDER), col="red")
+
+dev.off()
+
+
+#(e) ¿Tu regresión tiene el sesgo de la variable omitida o no? ¿Por qué? 
+#¿Son confiables tus estimadores? Explique.
